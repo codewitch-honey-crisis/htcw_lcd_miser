@@ -33,8 +33,7 @@ private:
             m_fade_ts = ms+m_fade_step_ms;
             --m_dim_count;
             const uint8_t i = bl_high?m_dim_count:255-m_dim_count;
-            Serial.print("Faded to ");
-            Serial.println(i);
+            S
             ledcWrite(bl_channel,i);
         }   
 #else
@@ -62,7 +61,7 @@ public:
             ledcSetup(bl_channel,5000,8);
             ledcWrite(bl_channel,bl_high?255:0);
             m_dim_count = 0;
-            Serial.println("initialized");
+            
 #else
             pinMode(pin_bl,OUTPUT);
             digitalWrite(pin_bl,bl_high?HIGH:LOW);
@@ -85,7 +84,7 @@ public:
         if(!initialize()) {return false;}
         uint32_t ms = millis();
         if(!m_dimmed && ms>=m_timeout_ts) {
-            Serial.println("fading");
+
             m_dimmed = true;
 #ifdef HTCW_ESP32_PWM
             m_dim_count = 255;
