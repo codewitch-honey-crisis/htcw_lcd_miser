@@ -139,6 +139,9 @@ public:
     void fade_step(uint32_t milliseconds) {
         m_fade_step_ms = milliseconds;
     }
+    bool faded() const {
+        return m_dim_count == 0 && m_dimmed;
+    }
 #endif
 
 };
