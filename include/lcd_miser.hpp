@@ -22,6 +22,7 @@ private:
     uint32_t m_fade_ts;
     uint32_t m_fade_step_ms;
     int m_dim_count;
+    float m_max_level;
 #endif
     void do_fade() {        
 #ifdef ESP32
@@ -29,7 +30,7 @@ private:
         if(ms>=m_fade_ts) {
             m_fade_ts = ms+m_fade_step_ms;
             --m_dim_count;
-            const uint8_t i = bl_high?m_dim_count:255-m_dim_count;
+            const uint8_t i = bl_high?m_dim_count:255*m_max_level-m_dim_count;
             
             ledcWrite(bl_channel,i);
         }   
@@ -38,7 +39,7 @@ private:
     if(ms>=m_fade_ts) {
         m_fade_ts = ms+m_fade_step_ms;
         --m_dim_count;
-        const uint8_t i = bl_high?m_dim_count:255-m_dim_count;
+        const uint8_t i = bl_high?m_dim_count:255*m_max_level-m_dim_count;
         
         analogWrite(pin_bl,i);
         delay(10);
@@ -55,8 +56,8 @@ public:
             m_timeout_ms(10*1000),
             m_timeout_ts(0),
             m_dimmed(false)
-#ifdef ESP32
-            ,m_fade_ts(0),m_fade_step_ms(10)
+#if defined(ESP32) || defined(CORE_TEENSY)
+            ,m_fade_ts(0),m_fade_step_ms(10),m_max_level(1.0)
 #endif
             {
         
@@ -66,7 +67,7 @@ public:
 #ifdef ESP32
             ledcAttachPin(pin_bl,bl_channel);
             ledcSetup(bl_channel,5000,8);
-            ledcWrite(bl_channel,bl_high?255:0);
+            ledcWrite(bl_channel,bl_high?(255*m_max_level):0);
             m_dim_count = 0;
             
 #else
@@ -94,7 +95,7 @@ public:
 
             m_dimmed = true;
 #if defined(ESP32) || defined(CORE_TEENSY)
-            m_dim_count = 255;
+            m_dim_count = 255*m_max_level;
             m_fade_ts = ms+m_fade_step_ms;
 #else
             do_fade();
@@ -114,10 +115,10 @@ public:
         m_dimmed = false;
 #ifdef ESP32
         m_dim_count = 0;
-        ledcWrite(bl_channel,bl_high?255:0);
+        ledcWrite(bl_channel,bl_high?255*m_max_level:0);
 #elif defined(CORE_TEENSY)
         m_dim_count = 0;
-        analogWrite(pin_bl,bl_high?255:0);
+        analogWrite(pin_bl,bl_high?255*m_max_level:0);
 #else
         digitalWrite(pin_bl,bl_high?HIGH:LOW);
 #endif
@@ -135,12 +136,23 @@ public:
         return true;
     }
 #if defined(ESP32) || defined(CORE_TEENSY)
-    inline uint32_t fade_step() const { return m_fade_step_ms; }
+    uint32_t fade_step() const { return m_fade_step_ms; }
     void fade_step(uint32_t milliseconds) {
         m_fade_step_ms = milliseconds;
     }
     bool faded() const {
         return m_dim_count == 0 && m_dimmed;
+    }
+    float max_level() const { return m_max_level; }
+    void max_level(float value) {
+        m_max_level = value;
+        if(!dimmed()) {
+#if defined(ESP32)
+            ledcWrite(bl_channel,255*value);
+#elif defined(CORE_TEENSY)
+            analogWrite(pin_bl,255*value);
+#endif
+        }
     }
 #endif
 

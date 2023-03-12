@@ -1,6 +1,6 @@
 {
     "name": "htcw_lcd_miser",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "Provide a timeout for your LCD's backlight",
     "keywords": ["TFT","LCD","graphics","backlight", "power"],
     "authors": {
