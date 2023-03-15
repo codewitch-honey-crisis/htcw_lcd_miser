@@ -65,8 +65,8 @@ public:
     bool initialize() {
         if(!m_initialized) {
 #ifdef ESP32
-            ledcAttachPin(pin_bl,bl_channel);
             ledcSetup(bl_channel,5000,8);
+            ledcAttachPin(pin_bl,bl_channel);
             ledcWrite(bl_channel,bl_high?(255*m_max_level):0);
             m_dim_count = 0;
             
