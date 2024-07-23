@@ -182,7 +182,6 @@ public:
     }
     bool wake() {
         if(!initialize()) {return false;}
-        if(!m_dimmed) {return true;}
 #ifdef ARDUINO
         m_timeout_ts = millis()+m_timeout_ms;
 #else
@@ -190,6 +189,7 @@ public:
         m_timeout_ts = pdTICKS_TO_MS(xTaskGetTickCount())+m_timeout_ms;
 #endif
 #endif
+        if(!m_dimmed) {return true;}
         m_dimmed = false;
 #ifdef ESP_PLATFORM
         m_dim_count = 0;
