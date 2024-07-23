@@ -182,6 +182,7 @@ public:
     }
     bool wake() {
         if(!initialize()) {return false;}
+        
 #ifdef ARDUINO
         m_timeout_ts = millis()+m_timeout_ms;
 #else
@@ -189,10 +190,11 @@ public:
         m_timeout_ts = pdTICKS_TO_MS(xTaskGetTickCount())+m_timeout_ms;
 #endif
 #endif
+        m_dim_count = 0;
         if(!m_dimmed) {return true;}
         m_dimmed = false;
+        
 #ifdef ESP_PLATFORM
-        m_dim_count = 0;
 #ifdef ARDUINO
         ledcWrite(bl_channel,bl_high?255*m_max_level:0);
 #else
@@ -200,7 +202,6 @@ public:
         ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel);   
 #endif
 #elif defined(CORE_TEENSY)
-        m_dim_count = 0;
         analogWrite(pin_bl,bl_high?255*m_max_level:0);
 #else
         digitalWrite(pin_bl,bl_high?HIGH:LOW);
