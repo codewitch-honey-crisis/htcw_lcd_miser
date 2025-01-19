@@ -5,16 +5,14 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <memory.h>
+#endif
+#ifdef ESP_PLATFORM
 #include <esp_idf_version.h>
 #include <driver/ledc.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #endif
-#ifdef ARDUINO
-namespace arduino {
-#else
-namespace esp_idf {
-#endif
+namespace htcw {
 template<uint8_t PinBL, bool BLHigh = true
 #ifdef ESP_PLATFORM
 , uint8_t PwmChannel = 0
@@ -39,18 +37,16 @@ private:
     float m_max_level;
 #endif
     void do_fade() {        
-#if defined(ESP_PLATFORM)
 #ifdef ARDUINO
+#if defined(ESP_PLATFORM) || defined(CORE_TEENSY)
         uint32_t ms = millis();
-        if(ms>=m_fade_ts) {
-            m_fade_ts = ms+m_fade_step_ms;
-            --m_dim_count;
-            const uint8_t i = bl_high?m_dim_count:255*m_max_level-m_dim_count;
-            
-            ledcWriteChannel(bl_channel,i);
-        }   
+#endif
 #else
+#ifdef ESP_PLATFORM
         uint32_t ms = pdTICKS_TO_MS(xTaskGetTickCount());
+#endif
+#endif
+#if defined(ESP_PLATFORM)
         if(ms>=m_fade_ts) {
             m_fade_ts = ms+m_fade_step_ms;
             --m_dim_count;
@@ -59,17 +55,15 @@ private:
             ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel, i);
             ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel);   
         }
-#endif
 #elif defined(CORE_TEENSY)
-    uint32_t ms = millis();
-    if(ms>=m_fade_ts) {
-        m_fade_ts = ms+m_fade_step_ms;
-        --m_dim_count;
-        const uint8_t i = bl_high?m_dim_count:255*m_max_level-m_dim_count;
-        
-        analogWrite(pin_bl,i);
-        delay(10);
-    }
+        if(ms>=m_fade_ts) {
+            m_fade_ts = ms+m_fade_step_ms;
+            --m_dim_count;
+            const uint8_t i = bl_high?m_dim_count:255*m_max_level-m_dim_count;
+            
+            analogWrite(pin_bl,i);
+            delay(10);
+        }
 #else
         digitalWrite(pin_bl,bl_high?LOW:HIGH);
 #endif
@@ -91,11 +85,6 @@ public:
     bool initialize() {
         if(!m_initialized) {
 #ifdef ESP_PLATFORM
-#ifdef ARDUINO
-            // BUG: Output starts dark! This isn't outputing
-            ledcAttachChannel(pin_bl,5000,8,bl_channel);
-            ledcWriteChannel(bl_channel,bl_high?(255*m_max_level):0);
-#else
             ledc_timer_config_t ledc_timer;
             memset(&ledc_timer,0,sizeof(ledc_timer)); 
             ledc_timer.speed_mode       = LEDC_LOW_SPEED_MODE;
@@ -119,7 +108,6 @@ public:
             ESP_ERROR_CHECK(ledc_channel_config(&ledc_cfg));
             ledc_set_duty(LEDC_LOW_SPEED_MODE,(ledc_channel_t)bl_channel,bl_high?(255*m_max_level):0);
             ledc_update_duty(LEDC_LOW_SPEED_MODE,(ledc_channel_t)bl_channel);
-#endif
             m_dim_count = 0;
 #else
             pinMode(pin_bl,OUTPUT);
@@ -163,7 +151,6 @@ public:
 #endif
 #endif
         if(!m_dimmed && ms>=m_timeout_ts) {
-
             m_dimmed = true;
 #if defined(ESP_PLATFORM) || defined(CORE_TEENSY)
             m_dim_count = 255*m_max_level;
@@ -194,12 +181,8 @@ public:
         m_dimmed = false;
         
 #ifdef ESP_PLATFORM
-#ifdef ARDUINO
-        ledcWriteChannel(bl_channel,bl_high?255*m_max_level:0);
-#else
         ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel, bl_high?255*m_max_level:0);
         ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel);   
-#endif
 #elif defined(CORE_TEENSY)
         analogWrite(pin_bl,bl_high?255*m_max_level:0);
 #else
@@ -235,12 +218,8 @@ public:
         m_max_level = value;
         if(!dimmed()) {
 #if defined(ESP_PLATFORM)
-#ifdef ARDUINO
-            ledcWriteChannel(bl_channel,255*value);
-#else
             ledc_set_duty(LEDC_LOW_SPEED_MODE, bl_channel, 255*value);
             ledc_update_duty(LEDC_LOW_SPEED_MODE, bl_channel);   
-#endif
 #elif defined(CORE_TEENSY)
             analogWrite(pin_bl,255*value);
 #endif
