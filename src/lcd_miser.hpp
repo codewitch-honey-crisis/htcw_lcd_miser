@@ -219,7 +219,7 @@ public:
         if(!dimmed()) {
 #if defined(ESP_PLATFORM)
             ledc_set_duty(LEDC_LOW_SPEED_MODE, bl_channel, 255*value);
-            ledc_update_duty(LEDC_LOW_SPEED_MODE, bl_channel);   
+            ledc_update_duty( LEDC_LOW_SPEED_MODE,(ledc_channel_t) bl_channel);   
 #elif defined(CORE_TEENSY)
             analogWrite(pin_bl,255*value);
 #endif
