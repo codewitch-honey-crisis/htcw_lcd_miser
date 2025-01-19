@@ -47,7 +47,7 @@ private:
             --m_dim_count;
             const uint8_t i = bl_high?m_dim_count:255*m_max_level-m_dim_count;
             
-            ledcWrite(bl_channel,i);
+            ledcWriteChannel(bl_channel,i);
         }   
 #else
         uint32_t ms = pdTICKS_TO_MS(xTaskGetTickCount());
@@ -92,10 +92,9 @@ public:
         if(!m_initialized) {
 #ifdef ESP_PLATFORM
 #ifdef ARDUINO
-            ledcSetup(bl_channel,5000,8);
-            ledcAttachPin(pin_bl,bl_channel);
-            ledcWrite(bl_channel,bl_high?(255*m_max_level):0);
-            
+            // BUG: Output starts dark! This isn't outputing
+            ledcAttachChannel(pin_bl,5000,8,bl_channel);
+            ledcWriteChannel(bl_channel,bl_high?(255*m_max_level):0);
 #else
             ledc_timer_config_t ledc_timer;
             memset(&ledc_timer,0,sizeof(ledc_timer)); 
@@ -196,7 +195,7 @@ public:
         
 #ifdef ESP_PLATFORM
 #ifdef ARDUINO
-        ledcWrite(bl_channel,bl_high?255*m_max_level:0);
+        ledcWriteChannel(bl_channel,bl_high?255*m_max_level:0);
 #else
         ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel, bl_high?255*m_max_level:0);
         ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)bl_channel);   
@@ -237,7 +236,7 @@ public:
         if(!dimmed()) {
 #if defined(ESP_PLATFORM)
 #ifdef ARDUINO
-            ledcWrite(bl_channel,255*value);
+            ledcWriteChannel(bl_channel,255*value);
 #else
             ledc_set_duty(LEDC_LOW_SPEED_MODE, bl_channel, 255*value);
             ledc_update_duty(LEDC_LOW_SPEED_MODE, bl_channel);   
